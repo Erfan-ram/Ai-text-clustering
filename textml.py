@@ -28,30 +28,6 @@ main_categories = {
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-def extract_site_caption():
-    response = requests.get(
-        url="https://khabaryab.net/xxxx",
-        headers={'Authorization': 'xxxxx'}
-    )
-
-    if response.status_code == 200:
-        data = response.json()
-        # print(data)
-        site_captions = []
-        for eachnews in data['news']:
-            if eachnews['summary'] != "":
-                site_captions.append({
-                    'caption': eachnews['summary'],
-                    'source': 'siteCaptions',
-                    'id': uuid4().hex,
-                }) 
-        
-        # with open('siteCaptions.json', 'w', encoding='utf-8') as file:
-        #     json.dump(site_captions, file, indent=4, ensure_ascii=False)
-            
-        if len(site_captions)<5:
-            return None
-        return site_captions
 
 def extract_scraper_captions(data : dict):
     captions = []
@@ -96,17 +72,15 @@ def rundbscan(newsdict : dict):
     nltk.download('wordnet')
 
     # Load and preprocess captions from both files
-    sitecap = extract_site_caption()
     scrapcap = extract_scraper_captions(newsdict)
-    
-    if not sitecap and not scrapcap:
-        print("failed to get caption from scraper or site ")
+
+    if not scrapcap:
+        print("failed to get caption from scraper ")
         return
     captions_file1 = load_and_preprocess_captions(scrapcap)
-    captions_file2 = load_and_preprocess_captions(sitecap)
 
     # Combine captions from both files
-    all_captions = captions_file1 + captions_file2
+    all_captions = captions_file1
 
     # Convert to DataFrame for easy processing
     df = pd.DataFrame(all_captions, columns=['Source', 'ID', 'Caption', 'Processed_Caption'])
@@ -146,21 +120,15 @@ def rundbscan(newsdict : dict):
                 })
 
     # site_captions_group_count = sum(
-    #     any(caption['Source'] == 'siteCaptions' for caption in captions)
     #     for captions in grouped_captions.values()
     # )
 
     # print(f"Total number of groups: {len(grouped_captions)}")
-    # print(f"Number of groups with at least one 'siteCaptions': {site_captions_group_count}")
 
-    filtered_grouped_captions = {
-        label: captions for label, captions in grouped_captions.items()
-        if not any(caption['Source'] == 'siteCaptions' for caption in captions)
-    }
     
     final_captions = {}
     # Randomly filter out one caption from each group
-    for label, captions in filtered_grouped_captions.items():
+    for label, captions in grouped_captions.items():
         if len(captions) > 1:
             random_caption = choice(captions)
             final_captions[label] = [random_caption]
@@ -177,9 +145,6 @@ def rundbscan(newsdict : dict):
             
     for label, captions in grouped_captions.items():
         for eachnews in captions:
-            # pass news in database
-            if eachnews['Source'] == 'siteCaptions':
-                continue
             all_caption_ids.append(eachnews['ID'])
             
     print (f"all cap: {len(all_caption_ids)},final unique: {len(final_caption_ids)}")
