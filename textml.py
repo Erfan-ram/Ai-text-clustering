@@ -28,7 +28,6 @@ main_categories = {
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-
 def extract_scraper_captions(data : dict):
     captions = []
     for category in main_categories.keys():
@@ -42,6 +41,25 @@ def extract_scraper_captions(data : dict):
                 })
     # with open('scraperCaptions.json', 'w', encoding='utf-8') as file:
     #     json.dump(captions, file, indent=4, ensure_ascii=False)
+
+    print(f"Extracted {len(captions)} captions")
+    if len(captions) < 5:
+        return None
+    return captions
+
+def just_text(data : dict):
+    captions = []
+    for category in main_categories.keys():
+        # print(category)
+        for article in data[category]:
+            if 'Caption' in article and article['Caption'] != "":
+                captions.append({
+                    'caption': article['Caption'],
+                    # 'source': 'scraperCaptions',
+                    # 'id': f"@{uuid4().hex[:4]}_{uuid4().hex[:4]}"
+                })
+    with open('captions_fa.json', 'w', encoding='utf-8') as file:
+        json.dump(captions, file, indent=4, ensure_ascii=False)
 
     print(f"Extracted {len(captions)} captions")
     if len(captions) < 5:
@@ -100,7 +118,8 @@ def rundbscan(newsdict : dict):
 
     # Apply DBSCAN for clustering based on cosine similarity
     eps_value = 0.65  # This is the similarity threshold (adjustable)
-    min_samples_value = 2  # Minimum number of captions in a group
+    min_samples_value = 1  # Minimum number of captions in a group
+    # min_samples_value = 2  # Minimum number of captions in a group
 
     # Apply DBSCAN clustering on the distance matrix
     clustering = DBSCAN(eps=eps_value, min_samples=min_samples_value, metric='precomputed')
@@ -160,8 +179,7 @@ def rundbscan(newsdict : dict):
 
     # with open('similar_groups.json', 'w', encoding='utf-8') as json_file:
     #     json.dump(grouped_captions, json_file, ensure_ascii=False, indent=4)
-    # with open('filterd_similar_groups.json', 'w', encoding='utf-8') as json_file:
-    #     json.dump(filtered_grouped_captions, json_file, ensure_ascii=False, indent=4)
+
     # with open('final_captions.json', 'w', encoding='utf-8') as json_file:
     #     json.dump(final_captions, json_file, ensure_ascii=False, indent=4)
 
@@ -171,6 +189,20 @@ def rundbscan(newsdict : dict):
     
 # extract_site_caption()
 
-# if __name__ == '__main__':
-#     # main()
-#     mine()
+def main():
+    # Load the news data from the JSON file
+    with open("data/cap-ex2.json", "r", encoding='utf-8') as f:
+        news_data = json.load(f)
+
+    # Run the DBSCAN clustering on the news data
+    # repeated_news_uids = rundbscan(newsdict=news_data)
+    just_text(news_data)
+
+    # Save the repeated news UIDs to a file
+    # with open('repeated_news_uids.json', 'w', encoding='utf-8') as json_file:
+    #     json.dump(repeated_news_uids, json_file, ensure_ascii=False, indent=4)
+
+    # print(f"Repeated news UIDs saved to repeated_news_uids.json {len(repeated_news_uids)}")
+
+if __name__ == '__main__':
+    main()
