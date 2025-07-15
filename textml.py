@@ -12,54 +12,21 @@ from nltk.stem import WordNetLemmatizer
 import re
 from random import choice
 
-main_categories = {
-    "hotnews": "اخبار داغ",
-    "politics": "سیاست",
-    "economy": "اقتصاد",
-    "society": "اجتماعی",
-    "international": "بین‌الملل",
-    "sports": "ورزش",
-    "culture": "فرهنگ",
-    "accidents": "حوادث",
-    "science": "علم",
-    "photo": "عکس",
-}
 
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
-def extract_scraper_captions(data : dict):
+def extract_captions(data : dict):
     captions = []
-    for category in main_categories.keys():
-        # print(category)
-        for article in data[category]:
-            if 'Caption' in article and article['Caption'] != "":
-                captions.append({
-                    'caption': article['Caption'],
-                    'source': 'scraperCaptions',
-                    'id': article['uid']
+    for article in data:
+        if 'caption' in article and article['caption'] != "":
+            captions.append({
+                'caption': article['caption'],
+                'source': 'scraperCaptions',
+                'id': uuid4().hex  # Generate a unique ID for each caption
                 })
     # with open('scraperCaptions.json', 'w', encoding='utf-8') as file:
     #     json.dump(captions, file, indent=4, ensure_ascii=False)
-
-    print(f"Extracted {len(captions)} captions")
-    if len(captions) < 5:
-        return None
-    return captions
-
-def just_text(data : dict):
-    captions = []
-    for category in main_categories.keys():
-        # print(category)
-        for article in data[category]:
-            if 'Caption' in article and article['Caption'] != "":
-                captions.append({
-                    'caption': article['Caption'],
-                    # 'source': 'scraperCaptions',
-                    # 'id': f"@{uuid4().hex[:4]}_{uuid4().hex[:4]}"
-                })
-    with open('captions_fa.json', 'w', encoding='utf-8') as file:
-        json.dump(captions, file, indent=4, ensure_ascii=False)
 
     print(f"Extracted {len(captions)} captions")
     if len(captions) < 5:
@@ -90,7 +57,7 @@ def rundbscan(newsdict : dict):
     nltk.download('wordnet')
 
     # Load and preprocess captions from both files
-    scrapcap = extract_scraper_captions(newsdict)
+    scrapcap = extract_captions(newsdict)
 
     if not scrapcap:
         print("failed to get caption from scraper ")
@@ -177,8 +144,8 @@ def rundbscan(newsdict : dict):
 
     print(f"Repeated news UIDs saved to repeated_news_uids.json {len(repeated_news_uids)}")
 
-    # with open('similar_groups.json', 'w', encoding='utf-8') as json_file:
-    #     json.dump(grouped_captions, json_file, ensure_ascii=False, indent=4)
+    with open('similar_groups.json', 'w', encoding='utf-8') as json_file:
+        json.dump(grouped_captions, json_file, ensure_ascii=False, indent=4)
 
     # with open('final_captions.json', 'w', encoding='utf-8') as json_file:
     #     json.dump(final_captions, json_file, ensure_ascii=False, indent=4)
@@ -191,12 +158,12 @@ def rundbscan(newsdict : dict):
 
 def main():
     # Load the news data from the JSON file
-    with open("data/cap-ex2.json", "r", encoding='utf-8') as f:
+    with open("data/captions_fa.json", "r", encoding='utf-8') as f:
         news_data = json.load(f)
+    print(f"Loaded {len(news_data)} news articles from data/captions_fa.json")
 
     # Run the DBSCAN clustering on the news data
-    # repeated_news_uids = rundbscan(newsdict=news_data)
-    just_text(news_data)
+    repeated_news_uids = rundbscan(newsdict=news_data["allcaptions"])
 
     # Save the repeated news UIDs to a file
     # with open('repeated_news_uids.json', 'w', encoding='utf-8') as json_file:
